@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Fasvia</string>
+    <string name="title_activity_main">Fasvia</string>
+    <string name="package_name">com.nelbion.fasvia</string>
+    <string name="custom_url_scheme">com.nelbion.fasvia</string>
+</resources>
