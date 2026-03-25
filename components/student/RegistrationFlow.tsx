@@ -153,11 +153,8 @@ export default function RegistrationFlow() {
     setFormData(prev => ({ ...prev, name, matric_number: matric, department: dept, level, courses: uniqueCourses }));
   }
 
-  const [isNative, setIsNative] = useState<boolean | null>(null)
-  
-  useEffect(() => {
-    setIsNative(Capacitor.isNativePlatform())
-  }, [])
+  // Stable sync check — no useState/useEffect needed, Capacitor.isNativePlatform() is synchronous
+  const isNative = Capacitor.isNativePlatform()
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -400,14 +397,6 @@ export default function RegistrationFlow() {
         <Link href="/login" className="text-purple-accent hover:underline font-bold transition-all text-sm uppercase tracking-widest">
           Return to Login
         </Link>
-      </div>
-    )
-  }
-
-  if (isNative === null) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64">
-        <BrandLoader size={48} />
       </div>
     )
   }

@@ -7,6 +7,9 @@ const config: CapacitorConfig = {
   server: {
     url: 'https://fasvia-app.vercel.app',
     cleartext: true
+  },
+  android: {
+    allowMixedContent: true,
   }
 };
 
