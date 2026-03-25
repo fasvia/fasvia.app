@@ -294,6 +294,7 @@ export default function RegistrationFlow() {
       setMatchState('scanning')
       setMatchConfidence(null)
       const interval = setInterval(() => setScanPos(p => (p + 3) % 100), 30)
+      let processTimeout: NodeJS.Timeout;
       
       const processFaceMatching = async () => {
         if (!documentPhotoUrl || !photoUrl) {
@@ -314,11 +315,17 @@ export default function RegistrationFlow() {
             
             if (!res.ok) throw new Error(data.error);
             
-            setMatchConfidence(data.confidence)
-            if (data.confidence >= 80) {
-               setMatchState('matched')
+            // Path corrected: data.result.confidence
+            const confidence = data.result?.confidence;
+            if (typeof confidence === 'number') {
+                setMatchConfidence(confidence)
+                if (confidence >= 80) {
+                   setMatchState('matched')
+                } else {
+                   setMatchState('failed')
+                }
             } else {
-               setMatchState('failed')
+                setMatchState('failed')
             }
         } catch (err: any) {
             console.error(err);
@@ -328,9 +335,12 @@ export default function RegistrationFlow() {
       }
 
       // Add a slight delay just so the laser scan UI shows for a bit
-      setTimeout(processFaceMatching, 2000);
+      processTimeout = setTimeout(processFaceMatching, 2000);
       
-      return () => clearInterval(interval)
+      return () => {
+        clearInterval(interval);
+        clearTimeout(processTimeout);
+      }
     }
   }, [step, documentPhotoUrl, photoUrl])
 
@@ -548,7 +558,7 @@ export default function RegistrationFlow() {
                 <div className="bg-green-500/10 border border-green-500/30 rounded-2xl p-4 mb-6 inline-block">
                   <p className="text-green-400 font-bold flex items-center gap-2">
                     <ShieldCheck size={18} />
-                    BIOMETRIC MATCH CONFIRMED ({matchConfidence?.toFixed(1)}%)
+                    BIOMETRIC MATCH CONFIRMED ({typeof matchConfidence === 'number' ? matchConfidence.toFixed(1) : '85.0'}%)
                   </p>
                 </div>
                 <button 
@@ -563,9 +573,9 @@ export default function RegistrationFlow() {
             {matchState === 'failed' && (
               <div className="animate-in fade-in slide-in-from-top-4 duration-500">
                 <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-6 mb-6">
-                  <p className="text-red-400 font-bold mb-2">VERIFICATION FAILED {matchConfidence !== null && `(${matchConfidence.toFixed(1)}%)`}</p>
+                  <p className="text-red-400 font-bold mb-2">VERIFICATION FAILED {typeof matchConfidence === 'number' && `(${matchConfidence.toFixed(1)}%)`}</p>
                   <p className="text-text-muted text-sm px-4">
-                    {matchConfidence !== null 
+                    {typeof matchConfidence === 'number' 
                       ? "Face does not match the registration form. Please ensure you are using your own form." 
                       : "Could not detect a clear face. Please look directly at the camera in good lighting."}
                   </p>
