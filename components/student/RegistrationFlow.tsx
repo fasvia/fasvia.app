@@ -290,6 +290,7 @@ export default function RegistrationFlow() {
 
   const [scanPos, setScanPos] = useState(0)
   const [matchState, setMatchState] = useState<'scanning' | 'matched' | 'failed'>('scanning')
+  const [confidence, setConfidence] = useState<number | null>(null)
   
   useEffect(() => {
     if (step === 4) {
@@ -314,10 +315,17 @@ export default function RegistrationFlow() {
            clearInterval(interval);
            
            if (!res.ok) throw new Error(data.error);
-           setMatchState('matched')
+
+           const score = data.result.confidence;
+           setConfidence(score);
+
+           if (score < 80) {
+              setMatchState('failed')
+           } else {
+              setMatchState('matched')
+           }
         } catch (err: any) {
            console.error(err);
-           alert(err.message);
            setMatchState('failed')
            clearInterval(interval);
         }
@@ -373,33 +381,6 @@ export default function RegistrationFlow() {
     }
   }
 
-  // UI Guard: Students must use mobile for registration
-  if (isNative === false) {
-    return (
-      <div className="bg-surface rounded-3xl border border-border-subtle shadow-2xl p-12 max-w-xl mx-auto text-center transform animate-in fade-in zoom-in duration-500">
-        <div className="flex justify-center mb-8">
-          <Image src="/fasvia-logo.png" alt="Fasvia Logo" width={100} height={100} className="object-contain" />
-        </div>
-        
-        <div className="w-20 h-20 bg-purple-500/10 text-purple-400 rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_20px_rgba(168,85,247,0.2)]">
-          <Smartphone size={40} />
-        </div>
-
-        <h2 className="text-3xl text-white font-bold mb-4">Mobile Registration</h2>
-        <p className="text-text-muted mb-8 text-lg leading-relaxed">
-          Student enrollment requires biometric verification and document scanning, which is exclusively available on the <span className="text-purple-accent font-bold">Fasvia Mobile App</span>.
-        </p>
-
-        <div className="p-4 bg-bg-primary border border-border-subtle rounded-2xl mb-8">
-          <p className="text-sm text-text-muted">Please download the APK provided by your institution or scan the QR code at your department to get started.</p>
-        </div>
-
-        <Link href="/login" className="text-purple-accent hover:underline font-bold transition-all text-sm uppercase tracking-widest">
-          Return to Login
-        </Link>
-      </div>
-    )
-  }
 
   return (
     <div className="bg-surface rounded-3xl border border-border-subtle shadow-2xl p-8 max-w-3xl mx-auto overflow-hidden relative min-h-[500px] flex flex-col justify-center">
@@ -541,21 +522,23 @@ export default function RegistrationFlow() {
                      </>
                    )}
                    {matchState === 'matched' && (
-                     <>
-                        <div className="w-12 h-12 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mb-2 shadow-[0_0_20px_rgba(34,197,94,0.4)]">
+                      <div className="animate-in zoom-in duration-300">
+                        <div className="w-12 h-12 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mb-2 shadow-[0_0_20px_rgba(34,197,94,0.4)] mx-auto">
                            <CheckCircle size={28} />
                         </div>
-                        <span className="text-green-400 font-bold text-xs uppercase tracking-widest">Match Confirmed</span>
-                     </>
-                   )}
-                   {matchState === 'failed' && (
-                     <div className="animate-in zoom-in duration-300">
+                        <span className="text-green-400 font-bold text-xs uppercase tracking-widest block font-mono">Match Confirmed</span>
+                        <span className="text-[10px] text-green-300/60 font-mono mt-1 block">{confidence?.toFixed(1)}% Score</span>
+                      </div>
+                    )}
+                    {matchState === 'failed' && (
+                      <div className="animate-in zoom-in duration-300">
                         <div className="w-12 h-12 bg-red-500/20 text-red-500 rounded-full flex items-center justify-center mb-2 shadow-[0_0_20px_rgba(239,68,68,0.4)] mx-auto">
                            <ShieldCheck size={28} className="rotate-180" />
                         </div>
-                        <span className="text-red-500 font-bold text-xs uppercase tracking-widest">Verification Failed</span>
-                     </div>
-                   )}
+                        <span className="text-red-500 font-bold text-xs uppercase tracking-widest block font-mono">Match Failed</span>
+                        <span className="text-[10px] text-red-400/60 font-mono mt-1 block">{confidence ? `${confidence.toFixed(1)}% Score` : 'No face found'}</span>
+                      </div>
+                    )}
                 </div>
 
                 {/* Live Photo */}
@@ -567,14 +550,20 @@ export default function RegistrationFlow() {
              </div>
 
              <button onClick={() => setStep(5)} disabled={matchState !== 'matched'} className="w-full bg-green-500 hover:bg-green-600 disabled:bg-surface disabled:text-text-muted text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(34,197,94,0.3)] disabled:shadow-none transition-all mt-6">
-                 <ShieldCheck size={20}/> Proceed to Security
+                  <ShieldCheck size={20}/> Proceed to Security
              </button>
 
-             {matchState === 'failed' && (
-               <button onClick={() => setStep(1)} className="w-full mt-4 text-xs text-text-muted hover:text-white uppercase tracking-widest font-bold outline-none">
-                  Retry Verification Process
-               </button>
-             )}
+              {matchState === 'failed' && (
+                <div className="flex flex-col gap-3 mt-6">
+                  <p className="text-xs text-red-500/80 mb-2 italic text-center">Your face must match the passport photo on your registration form.</p>
+                  <button onClick={() => { setStep(3); setPhotoUrl(null); setLivenessState('waiting'); }} className="w-full bg-purple-primary hover:bg-purple-accent text-white py-4 rounded-xl font-bold transition-all">
+                    Recapture Live Face
+                  </button>
+                  <button onClick={() => setStep(1)} className="text-xs text-text-muted hover:text-white uppercase tracking-widest font-bold py-2 outline-none">
+                    Restart Entire Process
+                  </button>
+                </div>
+              )}
           </div>
         )}
 

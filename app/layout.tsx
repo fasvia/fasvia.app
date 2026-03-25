@@ -1,7 +1,13 @@
+'use client'
+
+import { useEffect } from "react";
+import { App } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import ThemeWrapper from '@/components/ui/ThemeWrapper';
+
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
   variable: "--font-geist-sans",
@@ -13,19 +19,28 @@ const geistMono = localFont({
   weight: "100 900",
 });
 
-export const metadata: Metadata = {
-  title: "Fasvia - Smart Attendance System",
-  description: "Official University Attendance Record System",
-  icons: {
-    icon: '/fasvia-logo.png',
-  },
-};
-
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      const backListener = App.addListener('backButton', ({ canGoBack }: any) => {
+        if (canGoBack) {
+          window.history.back();
+        } else {
+          App.exitApp();
+        }
+      });
+
+      return () => {
+        backListener.then((l: any) => l.remove());
+      };
+    }
+  }, []);
+
   return (
     <html lang="en">
       <body
