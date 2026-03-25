@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
 import { getTenantDb } from '@/lib/db'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 import bcrypt from 'bcryptjs'
 
 export async function POST(request: Request) {
   try {
-    const { schoolId } = getTenantDb()
+    const { supabase, schoolId } = getTenantDb(true)
     const { department_id, name, email, password } = await request.json()
 
     // Create the HOD in Supabase Auth using the Admin API

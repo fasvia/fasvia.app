@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs'
 
 export async function POST(request: Request) {
   try {
-    const { supabase, schoolId } = getTenantDb()
+    const { supabase, schoolId } = getTenantDb(true)
     const body = await request.json()
 
     // 1. Hash the proxy password (or generated pin if not provided)

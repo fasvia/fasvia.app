@@ -1,5 +1,6 @@
 import { headers } from 'next/headers'
 import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 import { getUserSession } from '@/lib/auth'
 
 /**
@@ -17,18 +18,20 @@ export function getSchoolId() {
 }
 
 /**
- * Returns the Supabase client and a helper to automatically scoped queries
- * to the current tenant's school_id.
+ * Returns the Supabase client (standard or admin) and a helper to automatically 
+ * scoped queries to the current tenant's school_id.
  */
-export function getTenantDb() {
+export function getTenantDb(admin = false) {
   const schoolId = getSchoolId()
   
   if (!schoolId) {
     throw new Error('Tenant context missing: No school_id found in request headers.')
   }
 
+  const client = admin ? supabaseAdmin : supabase
+
   return {
-    supabase,
+    supabase: client,
     schoolId,
     // Helper to append .eq('school_id', schoolId) to any query builder
     withTenant: <T extends { eq: (column: string, value: any) => any }>(query: T) => {

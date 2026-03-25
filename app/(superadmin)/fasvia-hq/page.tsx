@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 import CompanyDashboard from '@/components/superadmin/CompanyDashboard'
 
 export default async function FasviaHQ() {
