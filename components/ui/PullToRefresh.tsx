@@ -11,9 +11,8 @@ export default function PullToRefresh({ children }: { children: React.ReactNode 
 
   useEffect(() => {
     const handleTouchStart = (e: TouchEvent) => {
-      // Robust scroll check for all platforms
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop;
-      if (scrollTop === 0) {
+      // Only trigger if at the top of the scroll
+      if (window.scrollY === 0) {
         startY.current = e.touches[0].pageY
       } else {
         startY.current = -1
@@ -31,9 +30,9 @@ export default function PullToRefresh({ children }: { children: React.ReactNode 
         const dampenedDistance = Math.pow(distance, 0.8)
         setPullDistance(Math.min(dampenedDistance, threshold + 20))
         
-        // Prevent default scrolling when pulling (Android requires this to be reliable)
-        if (distance > 5 && e.cancelable) {
-          e.preventDefault()
+        // Prevent default scrolling when pulling
+        if (distance > 10) {
+          if (e.cancelable) e.preventDefault()
         }
       }
     }

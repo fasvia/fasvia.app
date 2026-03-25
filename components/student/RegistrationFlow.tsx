@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Tesseract from 'tesseract.js'
-import { UploadCloud, Camera, CheckCircle, ArrowRight, ShieldCheck, Mail, Lock, Fingerprint, Smartphone } from 'lucide-react'
+import { UploadCloud, Camera, CheckCircle, ArrowRight, ShieldCheck, Mail, Lock, Fingerprint, Smartphone, AlertCircle } from 'lucide-react'
 import BrandLoader from '@/components/ui/BrandLoader'
 import { generateDeviceFingerprint } from '@/lib/security'
 import { NativeBiometric } from 'capacitor-native-biometric'
@@ -213,7 +213,6 @@ export default function RegistrationFlow() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [livenessState, setLivenessState] = useState<'waiting' | 'blink' | 'captured'>('waiting')
 
-
   useEffect(() => {
     if (step === 3) {
       navigator.mediaDevices.getUserMedia({ video: true })
@@ -286,52 +285,49 @@ export default function RegistrationFlow() {
     }
   }
 
-
-
   const [scanPos, setScanPos] = useState(0)
   const [matchState, setMatchState] = useState<'scanning' | 'matched' | 'failed'>('scanning')
-  const [confidence, setConfidence] = useState<number | null>(null)
+  const [matchConfidence, setMatchConfidence] = useState<number | null>(null)
   
   useEffect(() => {
     if (step === 4) {
       setMatchState('scanning')
+      setMatchConfidence(null)
       const interval = setInterval(() => setScanPos(p => (p + 3) % 100), 30)
       
       const processFaceMatching = async () => {
         if (!documentPhotoUrl || !photoUrl) {
-           setMatchState('failed')
-           clearInterval(interval)
-           return;
+            setMatchState('failed')
+            clearInterval(interval)
+            return;
         }
 
         try {
-           const res = await fetch('/api/auth/face-compare', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ selfieBase64: photoUrl, formPhotoBase64: documentPhotoUrl })
-           });
-           
-           const data = await res.json();
-           clearInterval(interval);
-           
-           if (!res.ok) throw new Error(data.error);
-
-           const score = data.result.confidence;
-           setConfidence(score);
-
-           if (score < 80) {
-              setMatchState('failed')
-           } else {
-              setMatchState('matched')
-           }
+            const res = await fetch('/api/auth/face-compare', {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify({ selfieBase64: photoUrl, formPhotoBase64: documentPhotoUrl })
+            });
+            
+            const data = await res.json();
+            clearInterval(interval);
+            
+            if (!res.ok) throw new Error(data.error);
+            
+            setMatchConfidence(data.confidence)
+            if (data.confidence >= 80) {
+               setMatchState('matched')
+            } else {
+               setMatchState('failed')
+            }
         } catch (err: any) {
-           console.error(err);
-           setMatchState('failed')
-           clearInterval(interval);
+            console.error(err);
+            setMatchState('failed')
+            clearInterval(interval);
         }
       }
 
-      // Add a slight delay just so the laser scan UI shows for at least 2 seconds
+      // Add a slight delay just so the laser scan UI shows for a bit
       setTimeout(processFaceMatching, 2000);
       
       return () => clearInterval(interval)
@@ -381,6 +377,7 @@ export default function RegistrationFlow() {
     }
   }
 
+  // UI Guard removed for Demo version — students can now register on web
 
   return (
     <div className="bg-surface rounded-3xl border border-border-subtle shadow-2xl p-8 max-w-3xl mx-auto overflow-hidden relative min-h-[500px] flex flex-col justify-center">
@@ -495,75 +492,107 @@ export default function RegistrationFlow() {
         )}
 
         {step === 4 && (
-          <div className="text-center animate-in slide-in-from-right duration-500 max-w-2xl mx-auto py-4">
-             <h2 className="text-2xl text-white font-bold mb-2">Identity Matrix Calibration</h2>
-             <p className="text-text-muted mb-10 text-sm">Cross-referencing live footprint with extracted document photograph.</p>
-             
-             <div className="flex justify-center items-center gap-8 mb-12">
-                {/* Document Photo */}
-                <div className="relative w-48 h-64 bg-bg-primary border-2 border-border-subtle rounded-2xl overflow-hidden">
-                   {documentPhotoUrl ? (
-                     <img src={documentPhotoUrl} className="w-full h-full object-cover opacity-80" />
-                   ) : (
-                     <div className="w-full h-full flex flex-col items-center justify-center text-text-muted/50 p-4">
-                        <ShieldCheck size={48} className="mb-2"/>
-                        <span className="text-[10px] uppercase font-bold text-center">No ID cropped</span>
-                     </div>
-                   )}
-                   <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-[10px] text-white font-bold tracking-widest">FORM ID</div>
-                   {matchState === 'scanning' && <div className="absolute left-0 w-full h-1 bg-purple-accent shadow-[0_0_15px_#A855F7]" style={{ top: `${scanPos}%` }} />}
-                </div>
+          <div className="text-center animate-in fade-in slide-in-from-bottom-8 duration-500">
+            <h2 className="text-3xl text-white font-bold mb-2">Identity Matrix</h2>
+            <p className="text-text-muted mb-8 italic">Comparing live biometric signature with official document metadata...</p>
+            
+            <div className="relative w-72 h-72 mx-auto mb-10 group">
+              {/* Outer Glow Rings */}
+              <div className="absolute -inset-4 bg-purple-accent/20 rounded-full blur-2xl animate-pulse" />
+              <div className="absolute -inset-2 border-2 border-purple-accent/30 rounded-full animate-[spin_10s_linear_infinite]" />
+              
+              <div className="relative w-full h-full rounded-full border-4 border-purple-primary overflow-hidden shadow-[0_0_50px_rgba(168,85,247,0.4)]">
+                <img src={photoUrl || ''} alt="Selfie" className="w-full h-full object-cover grayscale brightness-110" />
+                
+                {matchState === 'scanning' && (
+                  <div 
+                    className="absolute left-0 right-0 h-1 bg-purple-accent shadow-[0_0_15px_#A855F7] z-10"
+                    style={{ top: `${scanPos}%` }}
+                  />
+                )}
+                
+                {matchState === 'matched' && (
+                  <div className="absolute inset-0 bg-green-500/20 flex items-center justify-center animate-in zoom-in duration-300">
+                    <CheckCircle size={100} className="text-green-400 drop-shadow-[0_0_20px_rgba(74,222,128,0.8)]" />
+                  </div>
+                )}
 
-                <div className="flex flex-col items-center">
-                   {matchState === 'scanning' && (
-                     <>
-                        <BrandLoader size={32} className="mb-2" />
-                        <span className="text-purple-accent font-bold text-xs uppercase tracking-widest animate-pulse">Analyzing...</span>
-                     </>
-                   )}
-                   {matchState === 'matched' && (
-                      <div className="animate-in zoom-in duration-300">
-                        <div className="w-12 h-12 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mb-2 shadow-[0_0_20px_rgba(34,197,94,0.4)] mx-auto">
-                           <CheckCircle size={28} />
-                        </div>
-                        <span className="text-green-400 font-bold text-xs uppercase tracking-widest block font-mono">Match Confirmed</span>
-                        <span className="text-[10px] text-green-300/60 font-mono mt-1 block">{confidence?.toFixed(1)}% Score</span>
-                      </div>
-                    )}
-                    {matchState === 'failed' && (
-                      <div className="animate-in zoom-in duration-300">
-                        <div className="w-12 h-12 bg-red-500/20 text-red-500 rounded-full flex items-center justify-center mb-2 shadow-[0_0_20px_rgba(239,68,68,0.4)] mx-auto">
-                           <ShieldCheck size={28} className="rotate-180" />
-                        </div>
-                        <span className="text-red-500 font-bold text-xs uppercase tracking-widest block font-mono">Match Failed</span>
-                        <span className="text-[10px] text-red-400/60 font-mono mt-1 block">{confidence ? `${confidence.toFixed(1)}% Score` : 'No face found'}</span>
-                      </div>
-                    )}
-                </div>
+                {matchState === 'failed' && (
+                  <div className="absolute inset-0 bg-red-500/20 flex items-center justify-center animate-in zoom-in duration-300">
+                    <AlertCircle size={100} className="text-red-400 drop-shadow-[0_0_20px_rgba(248,113,113,0.8)]" />
+                  </div>
+                )}
+              </div>
 
-                {/* Live Photo */}
-                <div className="relative w-48 h-64 bg-bg-primary border-2 border-purple-primary rounded-2xl overflow-hidden shadow-[0_0_20px_rgba(124,58,237,0.3)]">
-                   <img src={photoUrl || ''} className="w-full h-full object-cover transform scale-x-[-1]" />
-                   <div className="absolute top-2 left-2 bg-purple-primary/80 backdrop-blur-md px-3 py-1 rounded-full text-[10px] text-white font-bold tracking-widest">LIVE LIVENESS</div>
-                   {matchState === 'scanning' && <div className="absolute left-0 w-full h-1 bg-green-400 shadow-[0_0_15px_#4ADE80]" style={{ top: `${(scanPos + 20) % 100}%` }} />}
-                </div>
-             </div>
+              {/* Decorative Tech Corners */}
+              <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-purple-accent rounded-tl-lg" />
+              <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-purple-accent rounded-tr-lg" />
+              <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-purple-accent rounded-bl-lg" />
+              <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-purple-accent rounded-br-lg" />
+            </div>
 
-             <button onClick={() => setStep(5)} disabled={matchState !== 'matched'} className="w-full bg-green-500 hover:bg-green-600 disabled:bg-surface disabled:text-text-muted text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(34,197,94,0.3)] disabled:shadow-none transition-all mt-6">
-                  <ShieldCheck size={20}/> Proceed to Security
-             </button>
-
-              {matchState === 'failed' && (
-                <div className="flex flex-col gap-3 mt-6">
-                  <p className="text-xs text-red-500/80 mb-2 italic text-center">Your face must match the passport photo on your registration form.</p>
-                  <button onClick={() => { setStep(3); setPhotoUrl(null); setLivenessState('waiting'); }} className="w-full bg-purple-primary hover:bg-purple-accent text-white py-4 rounded-xl font-bold transition-all">
-                    Recapture Live Face
-                  </button>
-                  <button onClick={() => setStep(1)} className="text-xs text-text-muted hover:text-white uppercase tracking-widest font-bold py-2 outline-none">
-                    Restart Entire Process
-                  </button>
+            {matchState === 'scanning' && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-center gap-3">
+                  <div className="w-2 h-2 bg-purple-accent rounded-full animate-ping" />
+                  <p className="text-purple-accent font-bold tracking-widest uppercase text-sm">Cross-referencing facial nodes...</p>
                 </div>
-              )}
+                <div className="w-48 h-1 bg-bg-primary rounded-full mx-auto overflow-hidden">
+                   <div className="h-full bg-purple-accent animate-[shimmer_2s_infinite] w-full" />
+                </div>
+              </div>
+            )}
+
+            {matchState === 'matched' && (
+              <div className="animate-in fade-in slide-in-from-top-4 duration-500">
+                <div className="bg-green-500/10 border border-green-500/30 rounded-2xl p-4 mb-6 inline-block">
+                  <p className="text-green-400 font-bold flex items-center gap-2">
+                    <ShieldCheck size={18} />
+                    BIOMETRIC MATCH CONFIRMED ({matchConfidence?.toFixed(1)}%)
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setStep(5)}
+                  className="w-full max-w-sm mx-auto flex items-center justify-center gap-4 bg-purple-accent text-white p-6 rounded-2xl font-bold text-xl hover:scale-105 active:scale-95 transition-all shadow-[0_10px_30px_rgba(168,85,247,0.4)]"
+                >
+                  Proceed to Security <ArrowRight />
+                </button>
+              </div>
+            )}
+
+            {matchState === 'failed' && (
+              <div className="animate-in fade-in slide-in-from-top-4 duration-500">
+                <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-6 mb-6">
+                  <p className="text-red-400 font-bold mb-2">VERIFICATION FAILED {matchConfidence !== null && `(${matchConfidence.toFixed(1)}%)`}</p>
+                  <p className="text-text-muted text-sm px-4">
+                    {matchConfidence !== null 
+                      ? "Face does not match the registration form. Please ensure you are using your own form." 
+                      : "Could not detect a clear face. Please look directly at the camera in good lighting."}
+                  </p>
+                </div>
+                
+                <div className="flex flex-col gap-4 max-w-sm mx-auto p-4">
+                    <button 
+                      onClick={() => {
+                        setStep(3);
+                        setPhotoUrl(null);
+                        setMatchState('scanning');
+                      }}
+                      className="w-full flex items-center justify-center gap-3 bg-white text-black p-5 rounded-2xl font-bold hover:bg-gray-200 transition-all shadow-lg"
+                    >
+                      <Camera size={20} />
+                      Recapture Face
+                    </button>
+                    
+                    <button 
+                      onClick={() => setStep(1)}
+                      className="text-text-muted hover:text-white transition-colors"
+                    >
+                      Re-upload Document
+                    </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

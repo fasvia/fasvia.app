@@ -118,85 +118,6 @@ export default function Login() {
     }
   }
 
-  // Web-only: show a friendly "Students use mobile" screen
-  if (!isNative) {
-    return (
-      <div className="min-h-screen bg-bg-primary flex flex-col justify-center items-center p-4">
-        <div className="w-full max-w-md">
-          <div className="flex justify-center mb-8">
-            <Image src="/fasvia-logo.png" alt="Fasvia Logo" width={80} height={80} className="object-contain" />
-          </div>
-
-          <div className="bg-surface border border-border-subtle p-8 rounded-2xl shadow-2xl">
-            <h2 className="text-2xl text-white font-bold mb-2">Welcome back</h2>
-            <p className="text-text-muted mb-6 text-sm">Log in to manage your smart attendance sessions.</p>
-
-            {/* Mobile-only notice banner for the web */}
-            <div className="bg-purple-500/10 border border-purple-500/30 text-purple-300 p-4 rounded-xl mb-6 flex items-start gap-3 text-sm">
-              <Smartphone size={20} className="mt-0.5 shrink-0 text-purple-400" />
-              <div>
-                <p className="font-bold text-purple-200 mb-1">Students — Use the Fasvia App</p>
-                <p>Student login and registration is only available on the Fasvia mobile app. Lecturers and administrators can log in below.</p>
-              </div>
-            </div>
-
-            {error && (
-              <div className="bg-red-500/10 border border-red-500/30 text-red-400 p-4 rounded-xl mb-6 flex items-center gap-3 text-sm">
-                <AlertCircle size={18} /> {error}
-              </div>
-            )}
-
-            <form onSubmit={handleLogin} className="space-y-5">
-              <div>
-                <label className="text-xs text-text-muted font-bold uppercase tracking-widest block mb-2">Email Address</label>
-                <div className="flex items-center bg-bg-primary border border-border-subtle rounded-xl focus-within:border-purple-accent overflow-hidden transition-colors">
-                  <div className="pl-4 pr-3 text-text-muted flex items-center justify-center">
-                    <Mail size={18} />
-                  </div>
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    className="flex-1 bg-transparent py-3 pr-4 text-white outline-none"
-                    placeholder="Enter school email"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs text-text-muted font-bold uppercase tracking-widest block mb-2">Password</label>
-                <div className="flex items-center bg-bg-primary border border-border-subtle rounded-xl focus-within:border-purple-accent overflow-hidden transition-colors">
-                  <div className="pl-4 pr-3 text-text-muted flex items-center justify-center">
-                    <Lock size={18} />
-                  </div>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    className="flex-1 bg-transparent py-3 text-white outline-none"
-                    placeholder="••••••••"
-                  />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="px-4 text-text-muted hover:text-white transition-colors">
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="mt-4">
-                <button disabled={loading} type="submit" className="w-full bg-purple-primary hover:bg-purple-accent text-white font-bold py-3.5 rounded-xl shadow-[0_0_20px_rgba(124,58,237,0.3)] transition-all flex items-center justify-center gap-2">
-                  {loading ? <BrandLoader size={18} /> : 'Sign In'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Native (APK) — full login with biometric support
   return (
     <div className="min-h-screen bg-bg-primary flex flex-col justify-center items-center p-4">
       <div className="w-full max-w-md">
@@ -257,7 +178,7 @@ export default function Login() {
                 {loading ? <BrandLoader size={18} /> : 'Sign In'}
               </button>
 
-              {biometricAvailable && (
+              {isNative && biometricAvailable && (
                 <button
                   type="button"
                   onClick={handleBiometricLogin}

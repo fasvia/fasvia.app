@@ -8,9 +8,15 @@ function hexToRgb(hex: string) {
 }
 
 import PullToRefresh from './PullToRefresh'
+import { App } from '@capacitor/app'
+import { Capacitor } from '@capacitor/core'
+import { useRouter, usePathname } from 'next/navigation'
 
 export default function ThemeWrapper({ children }: { children: React.ReactNode }) {
   const [themeCache, setThemeCache] = useState<{primary: string, accent: string} | null>(null)
+
+  const router = useRouter()
+  const pathname = usePathname()
 
   useEffect(() => {
     async function loadTheme() {
@@ -29,7 +35,26 @@ export default function ThemeWrapper({ children }: { children: React.ReactNode }
       }
     }
     loadTheme()
-  }, [])
+
+    // Setup Back Button Listener for Native
+    if (Capacitor.isNativePlatform()) {
+      const listener = App.addListener('backButton', ({ canGoBack }) => {
+        if (canGoBack) {
+          window.history.back()
+        } else {
+           if (pathname === '/student' || pathname === '/lecturer' || pathname === '/login' || pathname === '/') {
+              App.exitApp()
+           } else {
+              router.back()
+           }
+        }
+      })
+
+      return () => {
+        listener.then(l => l.remove())
+      }
+    }
+  }, [router, pathname])
 
   return (
     <>

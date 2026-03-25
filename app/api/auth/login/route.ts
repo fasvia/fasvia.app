@@ -28,15 +28,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
     }
 
-    // 3. Students can ONLY log in on the native mobile app (DISABLED FOR DEMO)
-    /*
-    if (user.role === 'student' && platform !== 'native') {
-      return NextResponse.json(
-        { error: 'Students must use the Fasvia mobile app to log in. Download it from your institution.' },
-        { status: 403 }
-      )
-    }
-    */
+    // 3. Platform restriction removed for Demo version
 
     // 4. Device binding check (only on native platform)
     let deviceStatus: 'skip' | 'unregistered' | 'match' | 'blocked' = 'skip'
