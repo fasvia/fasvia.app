@@ -344,38 +344,13 @@ export default function RegistrationFlow() {
     }
   }, [step, documentPhotoUrl, photoUrl])
 
-  const [biometricAvailable, setBiometricAvailable] = useState(false);
-
-  useEffect(() => {
-    if (step === 5 && Capacitor.isNativePlatform()) {
-      NativeBiometric.isAvailable().then(result => {
-        if (result.isAvailable) setBiometricAvailable(true);
-      }).catch(e => console.log("Biometric check failed", e));
-    }
-  }, [step]);
-
-  const setupBiometrics = async () => {
-    try {
-      await NativeBiometric.setCredentials({
-        username: formData.email,
-        password: formData.password,
-        server: "fasvia.app",
-      });
-      alert("Fingerprint login enabled!");
-      submitRegistration();
-    } catch (err) {
-      alert("Failed to setup fingerprint: " + err);
-    }
-  }
-
   const submitRegistration = async () => {
     setLoading(true)
     try {
-      const fingerprint = await generateDeviceFingerprint()
       const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, profile_photo_url: photoUrl, role: 'student', device_fingerprint: fingerprint })
+        body: JSON.stringify({ ...formData, profile_photo_url: photoUrl, role: 'student' })
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Registration failed')
@@ -562,10 +537,10 @@ export default function RegistrationFlow() {
                   </p>
                 </div>
                 <button 
-                  onClick={() => setStep(5)}
+                  onClick={submitRegistration}
                   className="w-full max-w-sm mx-auto flex items-center justify-center gap-4 bg-purple-accent text-white p-6 rounded-2xl font-bold text-xl hover:scale-105 active:scale-95 transition-all shadow-[0_10px_30px_rgba(168,85,247,0.4)]"
                 >
-                  Proceed to Security <ArrowRight />
+                  {loading ? <BrandLoader size={24} /> : <>Complete Registration <ArrowRight /></>}
                 </button>
               </div>
             )}
@@ -604,25 +579,6 @@ export default function RegistrationFlow() {
               </div>
             )}
           </div>
-        )}
-
-        {step === 5 && (
-           <div className="text-center animate-in zoom-in duration-500 max-w-md mx-auto">
-              <div className="w-20 h-20 bg-purple-primary/20 text-purple-accent rounded-full flex items-center justify-center mx-auto mb-6">
-                 <Fingerprint size={48} />
-              </div>
-              <h2 className="text-2xl text-white font-bold mb-4">Biometric Login</h2>
-              <p className="text-text-muted mb-10">Would you like to enable fingerprint login for faster access next time?</p>
-              
-              <div className="space-y-4">
-                 <button onClick={setupBiometrics} className="w-full bg-purple-primary hover:bg-purple-accent text-white py-4 rounded-xl font-bold transition-all shadow-[0_0_15px_rgba(124,58,237,0.3)]">
-                    Yes, Enable Fingerprint
-                 </button>
-                 <button onClick={submitRegistration} className="w-full text-text-muted hover:text-white font-semibold py-2">
-                    Maybe Later
-                 </button>
-              </div>
-           </div>
         )}
 
         {step === 6 && (

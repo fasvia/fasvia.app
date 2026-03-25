@@ -12,8 +12,8 @@ export function middleware(request: NextRequest) {
     if (parts.length >= 2 && !hostname.includes('localhost') && parts[0] !== 'fasvia-app' && parts[0] !== 'www') {
       schoolId = parts[0]
     } else {
-      // Deterministic fallback UUID for local dev testing
-      schoolId = '11111111-1111-1111-1111-111111111111' 
+      // Valid Demo School ID for root domain/local fallback
+      schoolId = '754f7386-a244-489e-97c2-846115995874' 
     }
   }
 

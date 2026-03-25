@@ -4,11 +4,9 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Mail, Lock, AlertCircle, Eye, EyeOff, Fingerprint, Smartphone } from 'lucide-react'
+import { Mail, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react'
 import BrandLoader from '@/components/ui/BrandLoader'
-import { NativeBiometric } from 'capacitor-native-biometric'
 import { Capacitor } from '@capacitor/core'
-import { generateDeviceFingerprint } from '@/lib/security'
 
 export default function Login() {
   const router = useRouter()
@@ -17,23 +15,10 @@ export default function Login() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const [biometricAvailable, setBiometricAvailable] = useState(false)
   const [isNative, setIsNative] = useState(false)
-  const [deviceFingerprint, setDeviceFingerprint] = useState('')
 
   useEffect(() => {
-    const native = Capacitor.isNativePlatform()
-    setIsNative(native)
-
-    if (native) {
-      // Generate device fingerprint for device-binding check
-      generateDeviceFingerprint().then(fp => setDeviceFingerprint(fp))
-
-      // Check biometric availability
-      NativeBiometric.isAvailable().then(result => {
-        if (result.isAvailable) setBiometricAvailable(true)
-      }).catch(e => console.log('Biometric not available', e))
-    }
+    setIsNative(Capacitor.isNativePlatform())
   }, [])
 
   const performLogin = async (loginEmail: string, loginPassword: string) => {
@@ -49,7 +34,6 @@ export default function Login() {
           email: loginEmail,
           password: loginPassword,
           platform,
-          deviceFingerprint: isNative ? deviceFingerprint : undefined,
         }),
       })
 
@@ -57,33 +41,6 @@ export default function Login() {
 
       if (!res.ok) {
         throw new Error(data.error || 'Login failed')
-      }
-
-      // If first-time login on this device, register device fingerprint silently
-      if (isNative && data.deviceStatus === 'unregistered' && deviceFingerprint) {
-        const deviceName = `${navigator.userAgent.split('(')[1]?.split(';')[0] || 'Android Device'}`
-        await fetch('/api/auth/device/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: data.user.id,
-            deviceFingerprint,
-            deviceName,
-          }),
-        }).catch(() => {}) // Non-critical — don't block login if this fails
-      }
-
-      // Save credentials in native keystore for biometric login
-      if (isNative) {
-        try {
-          await NativeBiometric.setCredentials({
-            username: loginEmail,
-            password: loginPassword,
-            server: 'fasvia.app',
-          })
-        } catch (e) {
-          console.log('Could not save biometric credentials', e)
-        }
       }
 
       // Redirect based on role
@@ -103,19 +60,6 @@ export default function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     await performLogin(email, password)
-  }
-
-  const handleBiometricLogin = async () => {
-    try {
-      const credentials = await NativeBiometric.getCredentials({
-        server: 'fasvia.app',
-      })
-      if (credentials) {
-        await performLogin(credentials.username, credentials.password)
-      }
-    } catch (err: any) {
-      setError('Biometric authentication failed: ' + err.message)
-    }
   }
 
   return (
@@ -154,7 +98,7 @@ export default function Login() {
             </div>
 
             <div>
-              <label className="text-xs text-text-muted font-bold uppercase tracking-widest block mb-2">Password</label>
+              <label className="text-xs text-text-muted font-bold uppercase tracking-widest block mb-1">Password</label>
               <div className="flex items-center bg-bg-primary border border-border-subtle rounded-xl focus-within:border-purple-accent overflow-hidden transition-colors">
                 <div className="pl-4 pr-3 text-text-muted flex items-center justify-center">
                   <Lock size={18} />
@@ -177,18 +121,6 @@ export default function Login() {
               <button disabled={loading} type="submit" className="w-full bg-purple-primary hover:bg-purple-accent text-white font-bold py-3.5 rounded-xl shadow-[0_0_20px_rgba(124,58,237,0.3)] transition-all flex items-center justify-center gap-2">
                 {loading ? <BrandLoader size={18} /> : 'Sign In'}
               </button>
-
-              {isNative && biometricAvailable && (
-                <button
-                  type="button"
-                  onClick={handleBiometricLogin}
-                  disabled={loading}
-                  className="w-full border border-purple-primary/50 hover:border-purple-accent text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2"
-                >
-                  <Fingerprint size={20} className="text-purple-accent" />
-                  Login with Fingerprint
-                </button>
-              )}
             </div>
           </form>
 
