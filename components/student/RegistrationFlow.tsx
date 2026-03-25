@@ -2,9 +2,13 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Tesseract from 'tesseract.js'
-import { UploadCloud, Camera, CheckCircle, ArrowRight, ShieldCheck, Mail, Lock } from 'lucide-react'
+import { UploadCloud, Camera, CheckCircle, ArrowRight, ShieldCheck, Mail, Lock, Fingerprint, Smartphone } from 'lucide-react'
 import BrandLoader from '@/components/ui/BrandLoader'
 import { generateDeviceFingerprint } from '@/lib/security'
+import { NativeBiometric } from 'capacitor-native-biometric'
+import { Capacitor } from '@capacitor/core'
+import Image from 'next/image'
+import Link from 'next/link'
 
 // Helper for digital PDF extraction via CDN-loaded PDF.js
 const extractTextFromPDF = async (file: File, onProgress?: (p: number) => void, onImageExtracted?: (dataUrl: string) => void): Promise<string> => {
@@ -73,7 +77,7 @@ const extractTextFromPDF = async (file: File, onProgress?: (p: number) => void, 
 };
 
 export default function RegistrationFlow() {
-  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1)
+  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5 | 6>(1)
   const [loading, setLoading] = useState(false)
   const [progress, setProgress] = useState(0)
   
@@ -149,6 +153,12 @@ export default function RegistrationFlow() {
     setFormData(prev => ({ ...prev, name, matric_number: matric, department: dept, level, courses: uniqueCourses }));
   }
 
+  const [isNative, setIsNative] = useState<boolean | null>(null)
+  
+  useEffect(() => {
+    setIsNative(Capacitor.isNativePlatform())
+  }, [])
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
@@ -167,7 +177,7 @@ export default function RegistrationFlow() {
         );
         setProgress(100);
       } else if (file.type.startsWith('image/')) {
-        const img = new Image();
+        const img = new window.Image();
         img.onload = () => {
           const canvas = document.createElement('canvas');
           const cropW = img.width * 0.3;
@@ -205,6 +215,43 @@ export default function RegistrationFlow() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [livenessState, setLivenessState] = useState<'waiting' | 'blink' | 'captured'>('waiting')
+
+  // UI Guard: Students must use mobile for registration
+  if (isNative === false) {
+    return (
+      <div className="bg-surface rounded-3xl border border-border-subtle shadow-2xl p-12 max-w-xl mx-auto text-center transform animate-in fade-in zoom-in duration-500">
+        <div className="flex justify-center mb-8">
+          <Image src="/fasvia-logo.png" alt="Fasvia Logo" width={100} height={100} className="object-contain" />
+        </div>
+        
+        <div className="w-20 h-20 bg-purple-500/10 text-purple-400 rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_20px_rgba(168,85,247,0.2)]">
+          <Smartphone size={40} />
+        </div>
+
+        <h2 className="text-3xl text-white font-bold mb-4">Mobile Registration</h2>
+        <p className="text-text-muted mb-8 text-lg leading-relaxed">
+          Student enrollment requires biometric verification and document scanning, which is exclusively available on the <span className="text-purple-accent font-bold">Fasvia Mobile App</span>.
+        </p>
+
+        <div className="p-4 bg-bg-primary border border-border-subtle rounded-2xl mb-8">
+          <p className="text-sm text-text-muted">Please download the APK provided by your institution or scan the QR code at your department to get started.</p>
+        </div>
+
+        <Link href="/login" className="text-purple-accent hover:underline font-bold transition-all text-sm uppercase tracking-widest">
+          Return to Login
+        </Link>
+      </div>
+    )
+  }
+
+  // Still checking platform
+  if (isNative === null) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64">
+        <BrandLoader size={48} />
+      </div>
+    )
+  }
 
   useEffect(() => {
     if (step === 3) {
@@ -322,6 +369,30 @@ export default function RegistrationFlow() {
     }
   }, [step, documentPhotoUrl, photoUrl])
 
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+
+  useEffect(() => {
+    if (step === 5 && Capacitor.isNativePlatform()) {
+      NativeBiometric.isAvailable().then(result => {
+        if (result.isAvailable) setBiometricAvailable(true);
+      }).catch(e => console.log("Biometric check failed", e));
+    }
+  }, [step]);
+
+  const setupBiometrics = async () => {
+    try {
+      await NativeBiometric.setCredentials({
+        username: formData.email,
+        password: formData.password,
+        server: "fasvia.app",
+      });
+      alert("Fingerprint login enabled!");
+      submitRegistration();
+    } catch (err) {
+      alert("Failed to setup fingerprint: " + err);
+    }
+  }
+
   const submitRegistration = async () => {
     setLoading(true)
     try {
@@ -333,7 +404,7 @@ export default function RegistrationFlow() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Registration failed')
-      setStep(5)
+      setStep(6)
     } catch (err: any) {
       alert(err.message)
     } finally {
@@ -344,7 +415,7 @@ export default function RegistrationFlow() {
   return (
     <div className="bg-surface rounded-3xl border border-border-subtle shadow-2xl p-8 max-w-3xl mx-auto overflow-hidden relative min-h-[500px] flex flex-col justify-center">
       <div className="absolute top-6 left-0 right-0 flex gap-2 justify-center z-10">
-        {[1,2,3,4].map(i => (
+        {[1,2,3,4,5].map(i => (
           <div key={i} className={`h-1.5 w-16 rounded-full transition-all duration-500 ${step >= i ? 'bg-purple-accent shadow-[0_0_10px_#A855F7]' : 'bg-bg-primary border border-border-subtle'}`} />
         ))}
       </div>
@@ -506,8 +577,8 @@ export default function RegistrationFlow() {
                 </div>
              </div>
 
-             <button onClick={submitRegistration} disabled={loading || matchState !== 'matched'} className="w-full bg-green-500 hover:bg-green-600 disabled:bg-surface disabled:text-text-muted text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(34,197,94,0.3)] disabled:shadow-none transition-all mt-6">
-                {loading ? <BrandLoader size={20} /> : <><ShieldCheck size={20}/> Finalize Account Provisioning</>}
+             <button onClick={() => setStep(5)} disabled={matchState !== 'matched'} className="w-full bg-green-500 hover:bg-green-600 disabled:bg-surface disabled:text-text-muted text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(34,197,94,0.3)] disabled:shadow-none transition-all mt-6">
+                 <ShieldCheck size={20}/> Proceed to Security
              </button>
 
              {matchState === 'failed' && (
@@ -519,6 +590,25 @@ export default function RegistrationFlow() {
         )}
 
         {step === 5 && (
+           <div className="text-center animate-in zoom-in duration-500 max-w-md mx-auto">
+              <div className="w-20 h-20 bg-purple-primary/20 text-purple-accent rounded-full flex items-center justify-center mx-auto mb-6">
+                 <Fingerprint size={48} />
+              </div>
+              <h2 className="text-2xl text-white font-bold mb-4">Biometric Login</h2>
+              <p className="text-text-muted mb-10">Would you like to enable fingerprint login for faster access next time?</p>
+              
+              <div className="space-y-4">
+                 <button onClick={setupBiometrics} className="w-full bg-purple-primary hover:bg-purple-accent text-white py-4 rounded-xl font-bold transition-all shadow-[0_0_15px_rgba(124,58,237,0.3)]">
+                    Yes, Enable Fingerprint
+                 </button>
+                 <button onClick={submitRegistration} className="w-full text-text-muted hover:text-white font-semibold py-2">
+                    Maybe Later
+                 </button>
+              </div>
+           </div>
+        )}
+
+        {step === 6 && (
           <div className="text-center py-10 animate-in zoom-in duration-500 scale-100">
             <div className="w-28 h-28 bg-green-500/10 text-green-400 rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_30px_rgba(34,197,94,0.2)]">
               <CheckCircle size={64} />

@@ -27,6 +27,11 @@ export default async function DeptAdminDashboard() {
     supabase.from('academic_sessions').select('*').order('created_at', { ascending: false })
   )
 
+  // Fetch Students for management
+  const { data: students } = await withTenant(
+      supabase.from('users').select('id, name, email, matric_number, level, status').eq('role', 'student').eq('department_id', activeDeptId).order('name')
+  )
+
   // Fetch Disputes with student info
   const { data: disputes } = await withTenant(
     supabase.from('disputes')
@@ -45,6 +50,7 @@ export default async function DeptAdminDashboard() {
       <DeptAdminDashboardClient 
         initialCourses={courses || []} 
         initialLecturers={processedLecturers || []}
+        initialStudents={students || []}
         initialDisputes={disputes || []}
         academicSessions={sessions || []}
         departmentId={activeDeptId}

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { BookOpen, Users, BarChart2, AlertTriangle, Settings, User, LogOut, Home, Calendar, FileDown, Building2 } from 'lucide-react'
+import { BookOpen, Users, BarChart2, AlertTriangle, Settings, User, LogOut, Home, Calendar, FileDown, Building2, UserPlus } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 
 export default function Sidebar({ role, courses, pendingDisputes = 0 }: { role: string, courses?: any[], pendingDisputes?: number }) {
@@ -18,6 +18,7 @@ export default function Sidebar({ role, courses, pendingDisputes = 0 }: { role: 
     dept_admin: [
       { name: 'Courses', href: '/deptadmin', icon: BookOpen },
       { name: 'Lecturers', href: '/deptadmin?tab=lecturers', icon: Users },
+      { name: 'Students', href: '/deptadmin?tab=students', icon: UserPlus },
       { name: 'Reports', href: '/deptadmin?tab=reports', icon: BarChart2 },
       { name: 'Fraud Alerts', href: '/deptadmin?tab=fraud', icon: AlertTriangle, badge: pendingDisputes > 0 ? pendingDisputes : null },
       { name: 'Records', href: '/deptadmin?tab=records', icon: FileDown },

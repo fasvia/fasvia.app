@@ -17,7 +17,8 @@ import {
   UserPlus,
   FileDown,
   ChevronRight,
-  Filter
+  Filter,
+  Smartphone
 } from 'lucide-react'
 import CourseForm from '@/components/deptadmin/CourseForm'
 import CourseOCRUpload from '@/components/deptadmin/CourseOCRUpload'
@@ -28,6 +29,7 @@ import { generateAttendancePDF } from '@/lib/export-utils'
 export default function DeptAdminDashboardClient({ 
   initialCourses, 
   initialLecturers, 
+  initialStudents,
   initialDisputes,
   academicSessions,
   departmentId, 
@@ -48,6 +50,7 @@ export default function DeptAdminDashboardClient({
   const [selectedCourseIds, setSelectedCourseIds] = useState<string[]>([])
   const [savingAllocation, setSavingAllocation] = useState(false)
   const [navigating, setNavigating] = useState(false)
+  const [resettingId, setResettingId] = useState<string | null>(null)
 
   // Records Filtering
   const [filterSession, setFilterSession] = useState(academicSessions?.[0]?.id || '')
@@ -373,7 +376,7 @@ export default function DeptAdminDashboardClient({
 
   const renderFraud = () => (
     <div className="animate-in fade-in slide-in-from-bottom-4 space-y-8">
-       <DisputeManager disputes={initialDisputes} coursesRef={initialCourses} />
+       <DisputeManager disputes={initialDisputes} />
     </div>
   )
 
@@ -488,10 +491,79 @@ export default function DeptAdminDashboardClient({
     </div>
   )
 
+  const handleResetDevice = async (userId: string) => {
+    if (!confirm('This will allow the student to register a NEW device on their next login. Continue?')) return
+    
+    setResettingId(userId)
+    try {
+      const res = await fetch(`/api/auth/device/${userId}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error()
+      alert('Device access reset successfully. The student can now log in from a new phone.')
+    } catch {
+      alert('Failed to reset device access.')
+    } finally {
+      setResettingId(null)
+    }
+  }
+
+  const renderStudents = () => (
+    <div className="animate-in fade-in slide-in-from-bottom-4">
+      <div className="flex justify-between items-center mb-8">
+         <div>
+            <h2 className="text-2xl text-white font-bold">Student Management</h2>
+            <p className="text-text-muted">Manage departmental students and security settings. Use "Reset Device" if a student loses their phone.</p>
+         </div>
+      </div>
+
+      <div className="bg-surface border border-border-subtle rounded-xl overflow-hidden shadow-2xl">
+        <table className="w-full text-left">
+          <thead className="bg-bg-primary text-text-muted text-xs uppercase tracking-widest border-b border-border-subtle">
+            <tr>
+              <th className="p-5 font-semibold">Matric Number</th>
+              <th className="p-5 font-semibold">Name</th>
+              <th className="p-5 font-semibold">Level</th>
+              <th className="p-5 font-semibold text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border-subtle">
+            {initialStudents?.map((s: any) => (
+              <tr key={s.id} className="hover:bg-bg-primary/50 transition-colors">
+                <td className="p-5 text-purple-accent font-bold tracking-wider">{s.matric_number}</td>
+                <td className="p-5 text-white">{s.name}</td>
+                <td className="p-5 text-text-muted">
+                  <span className="px-2 py-1 bg-bg-primary rounded-md border border-border-subtle text-xs whitespace-nowrap">{s.level} Level</span>
+                </td>
+                <td className="p-5 text-right">
+                  <button 
+                    onClick={() => handleResetDevice(s.id)}
+                    disabled={resettingId === s.id}
+                    className="group bg-purple-primary/10 border border-purple-primary/30 hover:bg-purple-primary hover:text-white text-purple-accent px-4 py-2 rounded-xl text-xs font-bold transition-all inline-flex items-center gap-2"
+                  >
+                    <Smartphone size={14} className={resettingId === s.id ? 'animate-pulse' : 'group-hover:rotate-12 transition-transform'} />
+                    {resettingId === s.id ? 'Resetting...' : 'Reset Device'}
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        
+        {(!initialStudents || initialStudents.length === 0) && (
+          <div className="p-20 text-center">
+             <Users size={40} className="text-text-muted mx-auto mb-4 opacity-50" />
+             <h4 className="text-white font-bold">No students found</h4>
+             <p className="text-text-muted text-sm mt-1">There are no students registered in your department yet.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+
   return (
     <div className="p-8 pb-32">
         {activeTab === 'courses' && renderCourses()}
         {activeTab === 'lecturers' && renderLecturers()}
+        {activeTab === 'students' && renderStudents()}
         {activeTab === 'reports' && renderReports()}
         {activeTab === 'fraud' && renderFraud()}
         {activeTab === 'records' && renderRecords()}
