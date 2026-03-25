@@ -12,8 +12,9 @@ export function middleware(request: NextRequest) {
     if (parts.length >= 2 && !hostname.includes('localhost') && parts[0] !== 'fasvia-app' && parts[0] !== 'www') {
       schoolId = parts[0]
     } else {
-      // Verified Demo School ID: University of Ilorin
-      schoolId = '4db15f89-1366-4557-aa85-9a25e6ca9222' 
+      // Fallback for Demo/Root Domain (Fasvia HQ)
+      // The Registration API will automatically resolve the first available school
+      schoolId = 'DEMO_FALLBACK'
     }
   }
 

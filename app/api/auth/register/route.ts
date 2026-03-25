@@ -4,8 +4,19 @@ import bcrypt from 'bcryptjs'
 
 export async function POST(request: Request) {
   try {
-    const { supabase, schoolId } = getTenantDb(true)
+    let { supabase, schoolId } = getTenantDb(true)
     const body = await request.json()
+
+    // 0. Dynamic School Lookup (Fallback for Demo/Local Environments)
+    const { data: schoolExists } = await supabase.from('schools').select('id').eq('id', schoolId).single()
+    if (!schoolExists) {
+      console.warn(`[Fasvia] School ID ${schoolId} not found. Falling back to the first available university.`)
+      const { data: firstSchool } = await supabase.from('schools').select('id').limit(1).single()
+      if (!firstSchool) {
+        throw new Error('No universities found in the system. Please create one in Fasvia HQ first.')
+      }
+      schoolId = firstSchool.id
+    }
 
     // 1. Hash the proxy password (or generated pin if not provided)
     const password = body.password || 'default123'
