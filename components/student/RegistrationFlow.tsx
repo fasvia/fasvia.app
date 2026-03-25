@@ -216,42 +216,6 @@ export default function RegistrationFlow() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [livenessState, setLivenessState] = useState<'waiting' | 'blink' | 'captured'>('waiting')
 
-  // UI Guard: Students must use mobile for registration
-  if (isNative === false) {
-    return (
-      <div className="bg-surface rounded-3xl border border-border-subtle shadow-2xl p-12 max-w-xl mx-auto text-center transform animate-in fade-in zoom-in duration-500">
-        <div className="flex justify-center mb-8">
-          <Image src="/fasvia-logo.png" alt="Fasvia Logo" width={100} height={100} className="object-contain" />
-        </div>
-        
-        <div className="w-20 h-20 bg-purple-500/10 text-purple-400 rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_20px_rgba(168,85,247,0.2)]">
-          <Smartphone size={40} />
-        </div>
-
-        <h2 className="text-3xl text-white font-bold mb-4">Mobile Registration</h2>
-        <p className="text-text-muted mb-8 text-lg leading-relaxed">
-          Student enrollment requires biometric verification and document scanning, which is exclusively available on the <span className="text-purple-accent font-bold">Fasvia Mobile App</span>.
-        </p>
-
-        <div className="p-4 bg-bg-primary border border-border-subtle rounded-2xl mb-8">
-          <p className="text-sm text-text-muted">Please download the APK provided by your institution or scan the QR code at your department to get started.</p>
-        </div>
-
-        <Link href="/login" className="text-purple-accent hover:underline font-bold transition-all text-sm uppercase tracking-widest">
-          Return to Login
-        </Link>
-      </div>
-    )
-  }
-
-  // Still checking platform
-  if (isNative === null) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64">
-        <BrandLoader size={48} />
-      </div>
-    )
-  }
 
   useEffect(() => {
     if (step === 3) {
@@ -410,6 +374,42 @@ export default function RegistrationFlow() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // UI Guard: Students must use mobile for registration
+  if (isNative === false) {
+    return (
+      <div className="bg-surface rounded-3xl border border-border-subtle shadow-2xl p-12 max-w-xl mx-auto text-center transform animate-in fade-in zoom-in duration-500">
+        <div className="flex justify-center mb-8">
+          <Image src="/fasvia-logo.png" alt="Fasvia Logo" width={100} height={100} className="object-contain" />
+        </div>
+        
+        <div className="w-20 h-20 bg-purple-500/10 text-purple-400 rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_20px_rgba(168,85,247,0.2)]">
+          <Smartphone size={40} />
+        </div>
+
+        <h2 className="text-3xl text-white font-bold mb-4">Mobile Registration</h2>
+        <p className="text-text-muted mb-8 text-lg leading-relaxed">
+          Student enrollment requires biometric verification and document scanning, which is exclusively available on the <span className="text-purple-accent font-bold">Fasvia Mobile App</span>.
+        </p>
+
+        <div className="p-4 bg-bg-primary border border-border-subtle rounded-2xl mb-8">
+          <p className="text-sm text-text-muted">Please download the APK provided by your institution or scan the QR code at your department to get started.</p>
+        </div>
+
+        <Link href="/login" className="text-purple-accent hover:underline font-bold transition-all text-sm uppercase tracking-widest">
+          Return to Login
+        </Link>
+      </div>
+    )
+  }
+
+  if (isNative === null) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64">
+        <BrandLoader size={48} />
+      </div>
+    )
   }
 
   return (
