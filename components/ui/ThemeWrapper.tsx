@@ -7,6 +7,8 @@ function hexToRgb(hex: string) {
   return result ? `${parseInt(result[1], 16)} ${parseInt(result[2], 16)} ${parseInt(result[3], 16)}` : null;
 }
 
+import PullToRefresh from './PullToRefresh'
+
 export default function ThemeWrapper({ children }: { children: React.ReactNode }) {
   const [themeCache, setThemeCache] = useState<{primary: string, accent: string} | null>(null)
 
@@ -41,7 +43,9 @@ export default function ThemeWrapper({ children }: { children: React.ReactNode }
           `
         }} />
       )}
-      {children}
+      <PullToRefresh>
+        {children}
+      </PullToRefresh>
     </>
   )
 }
