@@ -35,9 +35,9 @@ export async function compareFaces(selfieBase64: string, formPhotoBase64: string
   }
 
   // result.confidence is 0-100
-  // Above 75 = same person
-  // Below 75 = reject
-  if (result.confidence < 75) {
+  // Above 80 = same person
+  // Below 80 = reject
+  if (result.confidence < 80) {
     throw new Error('Face does not match your registration form photo')
   }
 

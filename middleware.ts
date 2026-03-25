@@ -9,7 +9,7 @@ export function middleware(request: NextRequest) {
 
   if (!schoolId) {
     const parts = hostname.split('.')
-    if (parts.length >= 2 && !hostname.includes('localhost')) {
+    if (parts.length >= 2 && !hostname.includes('localhost') && parts[0] !== 'fasvia-app' && parts[0] !== 'www') {
       schoolId = parts[0]
     } else {
       // Deterministic fallback UUID for local dev testing
